@@ -1,0 +1,12 @@
+<snippet>
+	<content><![CDATA[
+var $1 = Class.create();
+$1.prototype = {
+    initialize: function() {
+    },
+
+    type: '$1'
+};
+]]></content>
+<description>Basic Script Include</description>
+</snippet>

@@ -1,0 +1,18 @@
+[
+{
+	
+	  "caption": "ServiceNow Sync",
+	  "mnemonic": "w",
+	  "id": "servicenow",
+	  "children": [
+			{ "id": "create", "caption": "Connect To ServiceNow", "command": "create_connection", "args" :{} },
+		  	{ "id": "test", "caption": "Test Connection", "command": "test_connection" },
+		  	{ "id": "set_update_set", "caption": "Set Update Set", "command": "set_update_set" },
+            { "id": "auth", "caption": "Enter Credentials", "command": "enter_credentials" },
+		  	{ "id" : "load_snow_table", "caption": "Sync Table", "command": "load_snow_table"}
+	  	]
+	}
+]
+
+
+

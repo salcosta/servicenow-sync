@@ -1,0 +1,6 @@
+[
+    { "caption": "-", "id": "snow" },
+    // { "id": "bgscript", "caption": "Run As Background Script", "command": "run_background_script" },    
+    { "command": "open_snow_record", "caption": "Open ServiceNow Record" }
+]
+    

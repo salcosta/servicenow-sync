@@ -1,0 +1,11 @@
+<snippet>
+	<content><![CDATA[
+var $1 = Class.create();
+
+$1.prototype = Object.extendsObject(AbstractAjaxProcessor, {
+  
+    type: "$1"
+});
+]]></content>
+<description>AJAX Script Include</description>
+</snippet>

@@ -1,0 +1,4 @@
+[
+	{ "caption": "Sync Record", "command": "load_snow_record", "args": {"dirs": []} },
+    { "caption": "Compare Record To Server", "command": "refresh_snow_record", "args": {"files": []} }
+]
