@@ -350,13 +350,13 @@ class LoadAllSnowRecordCommand(sublime_plugin.WindowCommand):
     def get_all_records(self, query):
         working_dir = self.window.folders()[0]
         settings = load_settings(working_dir)
-        ile_dir = self.this_dirs[0]
+        file_dir = self.this_dirs[0]
         table_settings = load_settings( file_dir )
 
         if settings!=False and table_settings!=False:
             items = get_list(settings, table_settings['table'], query)
             
-            action = sublime.yes_no_cancel_dialog("Action will add/change " + str(len(tems)) + " files.  Continue?)")
+            action = sublime.yes_no_cancel_dialog("Action will add/change " + str(len(items)) + " files.  Continue?")
             
             if action!=sublime.DIALOG_YES:
                 return
@@ -409,6 +409,164 @@ class LoadAllSnowRecordCommand(sublime_plugin.WindowCommand):
 
     def is_visible(self,dirs):
         return is_sn(self.window.folders()) and len(dirs) >0
+
+class LoadMyRecordCommand(sublime_plugin.WindowCommand):
+    this_dirs = []
+
+    def run(self, dirs):
+        self.this_dirs = dirs
+
+        working_dir = self.window.folders()[0]
+
+        settings = load_settings(working_dir)
+
+        auth = settings["auth"]
+
+        auth = settings["auth"].replace("Basic ", "")
+
+        credentials = base64.decodestring(bytes(auth, "utf-8"))
+
+        cred = credentials.decode("utf-8")
+
+        cred = cred.split(":")
+
+        user = cred[0]
+
+        self.get_all_records("sys_updated_by="+user)
+
+    def get_all_records(self, query):
+        working_dir = self.window.folders()[0]
+        settings = load_settings(working_dir)
+        file_dir = self.this_dirs[0]
+        table_settings = load_settings( file_dir )
+
+        if settings!=False and table_settings!=False:
+            items = get_list(settings, table_settings['table'], query)
+            
+            action = sublime.yes_no_cancel_dialog("Action will add/change " + str(len(items)) + " files.  Continue?")
+            
+            if action!=sublime.DIALOG_YES:
+                return
+
+
+            if 'multi' in table_settings:
+                for item in items:
+                    for field in os.listdir(file_dir):
+                        field_path = os.path.join(file_dir, field)
+
+                        if os.path.isdir(field_path):
+                            sub_settings = load_settings( field_path )
+                            body_field = field
+                            name_field = sub_settings['display']
+                            extension = sub_settings['extension']
+                            
+                            name = item[name_field] + "." + extension
+                            
+                            doc = item[body_field]
+
+                            file_name = os.path.join(file_dir,field, name)
+
+                            if os.path.exists(file_name):
+                                if sublime.ok_cancel_dialog("File already exists.\nOverwrite?")==False:
+                                    return False
+
+                            write_doc_file(file_name, doc)
+
+                            add_file(field_path ,item['sys_id'],name)                        
+
+            else:
+                for item in items:
+                    body_field = table_settings['body_field']
+                    name_field = table_settings['display']
+                    extension  = table_settings['extension'] 
+                    name = item[name_field] + "." + extension
+
+                    doc = item[body_field]
+                    file_name = os.path.join(file_dir , name)
+
+                    if os.path.exists(file_name):
+                        if sublime.ok_cancel_dialog(file_name + " already exists.\nOverwrite?")==False:
+                            return False
+
+                    write_doc_file(file_name, doc)
+
+                    add_file(file_dir,item['sys_id'],name)
+
+        return
+
+    def is_visible(self,dirs):
+        return is_sn(self.window.folders()) and len(dirs) > 0
+
+
+class LoadModifiedRecordCommand(sublime_plugin.WindowCommand):
+    this_dirs = []
+
+    def run(self, dirs):
+        self.this_dirs = dirs
+
+        self.get_all_records("sys_customer_update=true")
+
+    def get_all_records(self, query):
+        working_dir = self.window.folders()[0]
+        settings = load_settings(working_dir)
+        file_dir = self.this_dirs[0]
+        table_settings = load_settings(file_dir)
+
+        if settings != False and table_settings != False:
+            items = get_list(settings, table_settings['table'], query)
+
+            action = sublime.yes_no_cancel_dialog("Action will add/change " + str(len(items)) + " files.  Continue?")
+
+            if action != sublime.DIALOG_YES:
+                return
+
+            if 'multi' in table_settings:
+                for item in items:
+                    for field in os.listdir(file_dir):
+                        field_path = os.path.join(file_dir, field)
+
+                        if os.path.isdir(field_path):
+                            sub_settings = load_settings(field_path)
+                            body_field = field
+                            name_field = sub_settings['display']
+                            extension = sub_settings['extension']
+
+                            name = item[name_field] + "." + extension
+
+                            doc = item[body_field]
+
+                            file_name = os.path.join(file_dir, field, name)
+
+                            if os.path.exists(file_name):
+                                if sublime.ok_cancel_dialog("File already exists.\nOverwrite?") == False:
+                                    return False
+
+                            write_doc_file(file_name, doc)
+
+                            add_file(field_path, item['sys_id'], name)
+
+            else:
+                for item in items:
+                    body_field = table_settings['body_field']
+                    name_field = table_settings['display']
+                    extension = table_settings['extension']
+                    name = item[name_field] + "." + extension
+
+                    doc = item[body_field]
+                    file_name = os.path.join(file_dir, name)
+
+                    if os.path.exists(file_name):
+                        if sublime.ok_cancel_dialog(file_name + " already exists.\nOverwrite?") == False:
+                            return False
+
+                    write_doc_file(file_name, doc)
+
+                    add_file(file_dir, item['sys_id'], name)
+
+        return
+
+    def is_visible(self, dirs):
+        return is_sn(self.window.folders()) and len(dirs) > 0
 
 
 class RefreshSnowRecordCommand(sublime_plugin.WindowCommand):
@@ -603,7 +761,7 @@ def save_setting(dir, key, value):
     f.write( bytes(json.dumps(settings, indent=4),'utf-8'))
     f.close()
 
-    return true
+    return True
 
 
 def diff_file_to_doc(full_file_name, doc):
