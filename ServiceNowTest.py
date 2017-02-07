@@ -269,7 +269,6 @@ class LoadDefaultTablesCommand(sublime_plugin.WindowCommand):
             self.items.append({'name': 'sys_ui_action', 'label': 'UI Action'})
             self.items.append({'name': 'sys_ui_page', 'label': 'UI Page'})
             self.items.append({'name': 'sys_ui_script', 'label': 'UI Script'})
-            item_list = []
 
             self.table_fields = json.loads(table_field_list)
 
@@ -757,7 +756,10 @@ def save_if_newer(the_dir, the_id, name, the_file, doc, timestamp=False):
 
 
 def convert_file_name(name):
-    name = name.replace("/", "_").replace("\\", "_")
+    name = name.replace("/", "_").replace("\\", "_").replace("\0", "_").replace("<", "_").replace(">", "_").replace(":", "_").replace('"', "_")
+    name = name.replace("|", "_").replace("?", "_").replace("*", "_").replace("#", "_").replace("$", "_").replace("+", "_").replace("%", "_")
+    name = name.replace("!", "_").replace("`", "_").replace("&", "_").replace("{", "_").replace("}", "_").replace("'", "_").replace("=", "_")
+    name = name.replace("@", "_")
     return name
 
 
@@ -1024,6 +1026,5 @@ def get_all_records(folder, settings, query):
                 file_name = os.path.join(folder, convert_file_name(name))
 
                 save_if_newer(folder, item['sys_id'], name, file_name, doc, item['sys_updated_on'])
-
 
     return
