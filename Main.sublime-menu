@@ -52,5 +52,10 @@
         "id": "load_snow_table",
         "caption": "Sync Table",
         "command": "load_snow_table"
+    },
+    {
+        "id": "load_default_tables",
+        "caption": "Sync Default Tables",
+        "command": "load_default_tables"
     }]
 }]

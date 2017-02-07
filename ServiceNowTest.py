@@ -35,8 +35,9 @@ class OpenSnowRecordCommand(sublime_plugin.TextCommand):
 
             table_settings = load_settings(file_path)
 
-            if file_name in table_settings['files']:
-                sys_id = table_settings['files'][file_name]['sys_id']
+            sys_id = lookup_record_id(file_name, table_settings)
+
+            if sys_id is not False:
                 url = "https://" + settings['instance'] + ".service-now.com/"
                 url = url + table_settings['table'] + ".do?sys_id=" + sys_id
                 webbrowser.open_new_tab(url)
@@ -69,8 +70,9 @@ class ServiceNowListener(sublime_plugin.EventListener):
             data = dict()
             data[table_settings['body_field']] = text
 
-            if file_name in table_settings['files']:
-                sys_id = table_settings['files'][file_name]['sys_id']
+            sys_id = lookup_record_id(file_name, table_settings)
+
+            if sys_id is not False:
                 result = get_record(settings, table_settings['table'], sys_id)
 
                 if result is not False:
@@ -88,7 +90,6 @@ class ServiceNowListener(sublime_plugin.EventListener):
                                                                   "Overwrite Remote", "View Differences")
                             if action == sublime.DIALOG_YES:
                                 result = update_record(settings, data, table_settings['table'], sys_id)
-                                print(json.dumps(result))
                                 add_file(file_path, sys_id, file_name, result['records'][0]['sys_updated_on'])
 
                             if action == sublime.DIALOG_NO:
@@ -197,6 +198,7 @@ class LoadSnowTableCommand(sublime_plugin.WindowCommand):
             sub_settings['body_field'] = field['field']
             sub_settings['extension'] = field['extension']
             sub_settings['files'] = {}
+            sub_settings['sub'] = 'true'
 
             save_settings(sub_folder, sub_settings)
 
@@ -208,6 +210,149 @@ class LoadSnowTableCommand(sublime_plugin.WindowCommand):
 
     def custom_create_folder(self, name):
         self.file_dir = os.path.join(self.file_dir, name)
+
+        os.makedirs(self.file_dir)
+
+        self.settings['table'] = self.item['name']
+        self.window.show_input_panel("Display Field:", "name", self.custom_get_display_field, None, None)
+
+    def custom_get_display_field(self, display):
+        self.settings['display'] = display
+
+        self.window.show_input_panel("Body Field:", "script", self.custom_get_extension, None, None)
+        return
+
+    def custom_get_extension(self, body_field):
+        self.settings['body_field'] = body_field
+
+        self.window.show_input_panel("File Extension:", "js", self.custom_create_settings, None, None)
+        return
+
+    def custom_create_settings(self, extension):
+        self.settings['extension'] = extension
+        self.settings['files'] = {}
+
+        file_name = os.path.join(self.file_dir, "service-now.json")
+        f = open(file_name, 'wb')
+        f.write(bytes(json.dumps(self.settings, indent=4), 'utf-8'))
+        f.close()
+
+        return
+
+    def is_visible(self):
+        return is_sn(self.window.folders())
+
+
+class LoadDefaultTablesCommand(sublime_plugin.WindowCommand):
+    items = []
+    folder = ''
+    display = ''
+    description = ''
+    body_field = ''
+    extension = ''
+    settings = {}
+    file_dir = ""
+    item = {}
+    table_fields = {}
+
+    def run(self):
+        working_dir = self.window.folders()
+        app_settings = load_settings(working_dir[0])
+        self.file_dir = working_dir[0]
+
+        if app_settings is not False:
+            self.items = []
+            self.items.append({'name': 'sys_script', 'label': 'Business Rule'})
+            self.items.append({'name': 'sys_script_include', 'label': 'Script Include'})
+            self.items.append({'name': 'sys_script_client', 'label': 'Client Script'})
+            self.items.append({'name': 'sys_script_fix', 'label': 'Fix Script'})
+            self.items.append({'name': 'sys_ui_action', 'label': 'UI Action'})
+            self.items.append({'name': 'sys_ui_page', 'label': 'UI Page'})
+            self.items.append({'name': 'sys_ui_script', 'label': 'UI Script'})
+            item_list = []
+
+            self.table_fields = json.loads(table_field_list)
+
+            for item in self.items:
+                self.item = item
+                self.sync_table()
+
+    def sync_table(self):
+        name = self.item['name']
+
+        if name in self.table_fields:
+            if len(self.table_fields[name]) == 1:
+                self.create_single()
+            else:
+                self.create_multi()
+        else:
+            self.custom_get_folder_name()
+
+        return
+
+    def create_single(self):
+        name = self.item['name']
+        parent_settings = {}
+
+        friendly_name = str.replace(str.lower(self.item['label']), " ", "_") + "s"
+
+        if os.path.exists(os.path.join(self.file_dir, friendly_name)):
+            return
+
+        os.makedirs(os.path.join(self.file_dir, friendly_name))
+
+        parent_settings['table'] = self.item['name']
+        parent_settings['display'] = 'name'
+        parent_settings['body_field'] = self.table_fields[name][0]['field']
+        parent_settings['extension'] = self.table_fields[name][0]['extension']
+        parent_settings['files'] = {}
+
+        save_settings(os.path.join(self.file_dir, friendly_name), parent_settings)
+
+    def create_multi(self):
+        name = self.item['name']
+        parent_settings = {}
+
+        friendly_name = str.replace(str.lower(self.item['label']), " ", "_") + "s"
+        base_folder = os.path.join(self.file_dir, friendly_name)
+
+        if os.path.exists(base_folder):
+            return
+
+        os.makedirs(base_folder)
+
+        parent_settings['table'] = self.item['name']
+        parent_settings['display'] = 'name'
+        parent_settings['multi'] = True
+
+        save_settings(base_folder, parent_settings)
+
+        for field in self.table_fields[name]:
+            sub_settings = {}
+            folder_name = field['field']
+            sub_folder = os.path.join(base_folder, folder_name)
+            os.makedirs(sub_folder)
+
+            sub_settings['table'] = self.item['name']
+            sub_settings['display'] = 'name'
+            sub_settings['body_field'] = field['field']
+            sub_settings['extension'] = field['extension']
+            sub_settings['files'] = {}
+            sub_settings['sub'] = 'true'
+
+            save_settings(sub_folder, sub_settings)
+
+    def custom_get_folder_name(self):
+        friendly_name = str.replace(str.lower(self.item['label']), " ", "_")
+        self.window.show_input_panel("Table Folder Name:", friendly_name + "s", self.custom_create_folder, None, None)
+
+        return
+
+    def custom_create_folder(self, name):
+        self.file_dir = os.path.join(self.file_dir, name)
+
+        if os.path.exists(self.file_dir):
+            return
 
         os.makedirs(self.file_dir)
 
@@ -282,7 +427,7 @@ class LoadSnowRecordCommand(sublime_plugin.WindowCommand):
                         name = item[name_field] + "." + extension
 
                         doc = item[body_field]
-                        file_name = os.path.join(self.file_dir, child, name)
+                        file_name = os.path.join(self.file_dir, child, convert_file_name(name))
 
                         if os.path.exists(file_name):
                             if sublime.ok_cancel_dialog("File already exists.\nOverwrite?") is False:
@@ -299,7 +444,7 @@ class LoadSnowRecordCommand(sublime_plugin.WindowCommand):
                 name = item[name_field] + "." + extension
 
                 doc = item[body_field]
-                file_name = os.path.join(self.file_dir, name)
+                file_name = os.path.join(self.file_dir, convert_file_name(name))
 
                 if os.path.exists(file_name):
                     if sublime.ok_cancel_dialog("File already exists.\nOverwrite?") is False:
@@ -436,8 +581,9 @@ class RefreshSnowRecordCommand(sublime_plugin.WindowCommand):
         if table_settings is False:
             return False
 
-        if file_name in table_settings['files']:
-            sys_id = table_settings['files'][file_name]['sys_id']
+        sys_id = lookup_record_id(file_name, table_settings)
+
+        if sys_id is not False:
             result = get_record(settings, table_settings['table'], sys_id)
 
             if result is not False:
@@ -523,7 +669,7 @@ class CreateConnectionCommand(sublime_plugin.WindowCommand):
         save_settings(self.dir, self.settings)
 
     def is_visible(self):
-        return is_sn(self.window.folders()) == False
+        return is_sn(self.window.folders()) is False
 
 
 class EnterCredentialsCommand(sublime_plugin.WindowCommand):
@@ -545,7 +691,7 @@ class EnterCredentialsCommand(sublime_plugin.WindowCommand):
         save_setting(self.dir, "auth", "Basic " + encoded_cred.decode("utf-8").replace("\n", ""))
 
     def is_visible(self):
-        return is_sn(self.window.folders()) == True
+        return is_sn(self.window.folders()) is True
 
 
 class CreateDiffScratchCommand(sublime_plugin.TextCommand):
@@ -583,7 +729,7 @@ def save_if_newer(the_dir, the_id, name, the_file, doc, timestamp=False):
         update_time = convert_time(timestamp)
 
     # 'Get the files date here
-    file_name = os.path.join(the_dir, name)
+    file_name = os.path.join(the_dir, convert_file_name(name))
 
     if os.path.isfile(file_name):
         if name in settings['files']:
@@ -594,7 +740,7 @@ def save_if_newer(the_dir, the_id, name, the_file, doc, timestamp=False):
                     message = "There's a NEWER version of File '" + name + "' on the instance.\nOverwrite?"
                 if file_time > update_time:
                     prompt = True
-                    message = "There's an OLDER version of File '" + name + "' on the instance.\n"+str(time.mktime(file_time.timetuple()))+" ==? "+str(time.mktime(update_time.timetuple()))+"\nOverwrite?"
+                    message = "There's an OLDER version of File '" + name + "' on the instance.\nOverwrite?"
             else:
                 prompt = True
                 message = "File '" + name + "' has no timestamp on record, and may be out of sync with the instance.\nOverwrite?"
@@ -608,16 +754,53 @@ def save_if_newer(the_dir, the_id, name, the_file, doc, timestamp=False):
     return True
 
 
-def add_file(the_dir, the_id, name, update_time=time.time()):
+def convert_file_name(name):
+    name = name.replace("/", "_").replace("\\", "_")
+    return name
+
+
+def lookup_record_id(name, settings):
+    if not hasattr(settings, 'files'):
+        return False
+
+    if name in settings['files']:
+        return settings['files'][name]['sys_id']
+
+    for file in settings['files']:
+        if hasattr(file, 'file_name'):
+            if file['file_name'] == name:
+                return file['sys_id']
+
+    return False
+
+
+def is_multi(the_dir):
     settings = load_settings(the_dir)
+
+    if settings is not False:
+        if hasattr(settings, 'multi'):
+            return True
+
+    return False
+
+
+def add_file(the_dir, the_id, name, update_time=time.time()):
+    file_name = convert_file_name(name)
+
+    settings = load_settings(the_dir)
+
+    if not hasattr(settings, 'files'):
+        settings['files'] = dict()
 
     if name in settings['files']:
         settings['files'][name]['sys_id'] = the_id
         settings['files'][name]['update_time'] = update_time
+        settings['files'][name]['file_name'] = file_name
     else:
         settings['files'][name] = dict()
         settings['files'][name]['sys_id'] = the_id
         settings['files'][name]['update_time'] = update_time
+        settings['files'][name]['file_name'] = file_name
 
     save_settings(the_dir, settings)
 
@@ -732,14 +915,17 @@ def create_record(settings, data, table):
 
 # noinspection PyUnresolvedReferences,PyTypeChecker
 def get_list(settings, table, query):
-    data = dict()
-    url = "https://" + settings['instance'] + ".service-now.com/" + table + ".do?JSONv2"
-    if query != "":
-        url = url + "&sysparm_query=" + urllib.parse.quote(query.encode("utf-8"))
+    try:
+        data = dict()
+        url = "https://" + settings['instance'] + ".service-now.com/" + table + ".do?JSONv2"
+        if query != "":
+            url = url + "&sysparm_query=" + urllib.parse.quote(query.encode("utf-8"))
 
-    response_data = json.loads(http_call(settings, url, data))['records']
+        response_data = json.loads(http_call(settings, url, data))['records']
 
-    return response_data
+        return response_data
+    except:
+        return False
 
 
 def get_tables(settings):
@@ -784,7 +970,8 @@ def get_records_for_folder(folder, settings, query):
 
     for name in os.listdir(folder):
         if os.path.isdir(os.path.join(folder, name)):
-            get_records_for_folder(os.path.join(folder, name), settings, query)
+            if not is_multi(folder):
+                get_records_for_folder(os.path.join(folder, name), settings, query)
     return
 
 
@@ -793,10 +980,13 @@ def get_all_records(folder, settings, query):
 
     if settings is not False and table_settings is not False:
 
-        if 'table' not in table_settings.keys():
+        if not hasattr(table_settings, 'table'):
             return
 
         items = get_list(settings, table_settings['table'], query)
+
+        if 'sub' in table_settings:
+            return
 
         if 'multi' in table_settings:
             for item in items:
@@ -813,7 +1003,7 @@ def get_all_records(folder, settings, query):
 
                         doc = item[body_field]
 
-                        file_name = os.path.join(folder, field, name)
+                        file_name = os.path.join(folder, field, convert_file_name(name))
 
                         save_if_newer(folder, item['sys_id'], name, file_name, doc, item['sys_updated_on'])
 
@@ -825,7 +1015,7 @@ def get_all_records(folder, settings, query):
                 name = item[name_field] + "." + extension
 
                 doc = item[body_field]
-                file_name = os.path.join(folder, name)
+                file_name = os.path.join(folder, convert_file_name(name))
 
                 save_if_newer(folder, item['sys_id'], name, file_name, doc, item['sys_updated_on'])
 
