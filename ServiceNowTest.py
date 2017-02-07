@@ -731,6 +731,8 @@ def save_if_newer(the_dir, the_id, name, the_file, doc, timestamp=False):
     # 'Get the files date here
     file_name = os.path.join(the_dir, convert_file_name(name))
 
+    print("Grabbing File: "+name)
+
     if os.path.isfile(file_name):
         if name in settings['files']:
             if 'update_time' in settings['files'][name]:
@@ -760,14 +762,14 @@ def convert_file_name(name):
 
 
 def lookup_record_id(name, settings):
-    if not hasattr(settings, 'files'):
+    if 'files' not in settings:
         return False
 
     if name in settings['files']:
         return settings['files'][name]['sys_id']
 
     for file in settings['files']:
-        if hasattr(file, 'file_name'):
+        if 'file_name' in file:
             if file['file_name'] == name:
                 return file['sys_id']
 
@@ -778,7 +780,7 @@ def is_multi(the_dir):
     settings = load_settings(the_dir)
 
     if settings is not False:
-        if hasattr(settings, 'multi'):
+        if hasattr(settings, 'multi') or 'multi' in settings:
             return True
 
     return False
@@ -789,7 +791,7 @@ def add_file(the_dir, the_id, name, update_time=time.time()):
 
     settings = load_settings(the_dir)
 
-    if not hasattr(settings, 'files'):
+    if not 'files' not in settings:
         settings['files'] = dict()
 
     if name in settings['files']:
@@ -925,6 +927,7 @@ def get_list(settings, table, query):
 
         return response_data
     except:
+        print("An Error occurred while attempting to connect to the instance.")
         return False
 
 
@@ -980,8 +983,11 @@ def get_all_records(folder, settings, query):
 
     if settings is not False and table_settings is not False:
 
-        if not hasattr(table_settings, 'table'):
+        if 'table' not in table_settings:
+            print("Folder was not a ServiceNow Folder: "+folder)
             return
+
+        print("Grabbing Records for folder: "+folder)
 
         items = get_list(settings, table_settings['table'], query)
 
