@@ -793,7 +793,7 @@ def add_file(the_dir, the_id, name, update_time=time.time()):
 
     settings = load_settings(the_dir)
 
-    if not 'files' not in settings:
+    if 'files' not in settings:
         settings['files'] = dict()
 
     if name in settings['files']:
