@@ -1,6 +1,8 @@
 [
 	{ "caption": "Sync Record", "command": "load_snow_record", "args": {"dirs": []} },
 	{ "caption": "Sync Multiple Records", "command": "load_all_snow_record", "args": {"dirs": []} },
+	{ "caption": "Sync My Records", "command": "load_my_record", "args": {"dirs": []} },
+	{ "caption": "Sync All Customer Modified", "command": "load_modified_record", "args": {"dirs": []} },
 	{ "caption": "Change Table Config", "command": "change_table_config", "args": {"dirs": []} },
     { "caption": "Compare Record To Server", "command": "refresh_snow_record", "args": {"files": []} }
 ]
