@@ -13,49 +13,14 @@
         "caption": "Test Connection",
         "command": "test_connection"
     }, 
-    // {
-    //     "id": "set_update_set",
-    //     "caption": "Set Update Set",
-    //     "command": "set_update_set"
-    // },
      {
         "id": "auth",
         "caption": "Enter Credentials",
         "command": "enter_credentials"
     }, 
-    // {
-    //     "id": "snow_folder_sets",
-    //     "caption": "Initialize Folders",
-    //     "children" : [{
-    //         "id": "initialize_core",
-	   //      "caption": "Core Scripting",
-	   //      "command": "initialize_snow_project",
-    //     	"args": {"set" : "core"}	
-    //     },{
-    //         "id": "initialize_cms",
-	   //      "caption": "Content Management",
-	   //      "command": "initialize_snow_project",
-    //     	"args": {"set" : "cms"}	
-    //     },{
-    //         "id": "initialize_core",
-	   //      "caption": "Service Portal",
-	   //      "command": "initialize_snow_project",
-    //     	"args": {"set" : "sp"}	
-    //     },{
-    //         "id": "initialize_core",
-	   //      "caption": "All Scriptable",
-	   //      "command": "initialize_snow_project",
-    //     	"args": {"set" : "all"}	
-    //     }]
-    // }, 
     {
         "id": "load_snow_table",
         "caption": "Sync Table",
         "command": "load_snow_table"
-    },
-    {
-        "id": "load_default_tables",
-        "caption": "Sync Default Tables",
-        "command": "load_default_tables"
     }]
 }]
