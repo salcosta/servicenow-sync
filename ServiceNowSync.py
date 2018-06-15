@@ -1,18 +1,22 @@
-print("ServiceNowSync V2.0 Loaded...\n");
+import os
+import sys
+import sublime, sublime_plugin
+import imp
 
-from .Reloader import module_loader
+plugin = os.path.realpath(__file__)
+directory = os.path.dirname(plugin)
+	
+if directory not in sys.path:
+    sys.path.append(directory)
 
-moduleDirectories = [ "ServiceNowSync\\Common", "ServiceNowSync\\Commands", "ServiceNowSync\\Events" ]
-module_loader.load ( moduleDirectories, globals() )
-
-from create_connection import *
-from create_diff_scratch import *
-from enter_credentials import *
-from load_all_snow_record import *
-from load_snow_record import *
-from load_snow_table import *
-from load_modified_records import *
-from open_service_now_record import *
-from refresh_snow_record import *
-from test_connection import *
-from save_listener import *
+from Commands.create_connection import *
+from Commands.create_diff_scratch import *
+from Commands.enter_credentials import *
+from Commands.load_all_snow_record import *
+from Commands.load_snow_record import *
+from Commands.load_snow_table import *
+from Commands.load_modified_records import *
+from Commands.open_service_now_record import *
+from Commands.refresh_snow_record import *
+from Commands.test_connection import *
+from Events.save_listener import *

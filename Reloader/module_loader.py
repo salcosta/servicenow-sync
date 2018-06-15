@@ -7,7 +7,8 @@ def load ( moduleDirectories, pluginGlobals ):
 	modulePaths       = []
 
 	for path in sys.path:
-		if path.endswith ( "Sublime Text 3" + os.sep + "Packages" ):
+		print(path)
+		if path.endswith ( "Sublime Text 3" + os.sep + "Installed Packages" + os.sep + "servicenow-sync.sublime-package" ):
 			packagesPath = path
 			break
 
